@@ -1,0 +1,59 @@
+\section{Motivation}
+
+Mobile technologies have become ever-present in our daily lives and many 
+people's personal and professional interactions now depend on their 
+smartphone or tablet. The power consumption of mobile devices obviously 
+grew with the duration of their usage and the complexity of hardware and 
+software they involve. By nature, these devices are used away from power 
+sources and battery has thus become a critical component for the user 
+experience. However, battery technology hasn't managed to meet these new 
+requirements and hence energy efficiency has become a major concern of 
+users who are now looking for feedback to understand how applications 
+drain the battery of their devices \cite{heikkinen2012energy}. Moreover, 
+research has shown that implementations perceived as energy greedy will 
+receive lower ratings from users \cite{jabbarvand2015ecodroid}. The 
+ability to build energy efficient software consequently awards 
+developers with a competitive advantage on the market. However, energy 
+optimisation is often counter intuitive to many developers and there is 
+no real guidance. For example, there is no clear correlation between 
+energy and time efficiency \cite{bunse2009choosing}, and time 
+optimisation is thus not always useful to reduce the energy footprint of 
+a software. Also, some popular design principles such as the decorator 
+pattern have bad energy efficiency \cite{sahin2012initial}.
+
+Researchers have consequently developed tools to provide guidance to 
+developers by profiling the energy drain of their code. These tools were 
+initially tied to specific and expensive power measurement platforms 
+which inherently limited their use. Software-based approaches were 
+introduced so that energy profiling techniques are accessible to the 
+vast majority of developers by placing on them no hardware requirements. 
+The first key contribution of this work is to provide source-line level 
+energy estimates to the developers. This is achieved by extending Orka 
+(one of the first software-based energy profilers) 
+\cite{westfield2016orka}.
+
+To provide accurate and meaningful energy feedback however, energy 
+profilers should also take into account the drain caused by various 
+hardware components. This means being able to map the hardware energy 
+usage back to the code with the finest granularity possible. Moreover, 
+mobile devices exhibit several asynchronous power behaviours, most 
+significant of which is \textit{tail-energy}, which proves challenging 
+for the development of energy profilers 
+\cite{pathak2012energy,li2013calculating}. A component is said to 
+exhibit tail-power behaviour if it stays in a high-power for a constant 
+time after processing a workflow and this phenomenon can play an 
+important role in the energy drain. Thus far, only a few contributions, 
+such as \eprof{} \cite{pathak2012energy} have focussed on tail-energy by 
+relying on hardware- or model-based approaches. Therefore, no tool 
+accounting for tail-energy was accessible to the majority of developers. 
+To allow for this, the second major contribution of this work is for our 
+software-based solution to also provide tail-energy accounting. We have 
+focussed exclusively on Wi-Fi for now and will in future include other 
+hardware components.
+
+The remainder of this paper is organised as follows: Section 
+\ref{sec:background} outlines related work, Sections 
+\ref{sec:sourceline} and \ref{sec:hw} detail the major contributions. 
+Section \ref{sec:eval} provides an evaluation, and Section 
+\ref{sec:conc} concludes the paper and provides ideas for future work.
+

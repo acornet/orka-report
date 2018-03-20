@@ -1,0 +1,120 @@
+\section{Providing source-line level energy estimates} 
+\label{sec:sourceline}
+
+The key extension to Orka was to allow meaningful accounting for API 
+calls occurring in subroutines and provide this at the source-line level 
+rather than the method-level as was the case previously. To this end, 
+\orka{} now maintains an in-memory version of the call stack while it 
+replays the logs and attributes any API calls to all the routines in the 
+call stack. Therefore, \Orka{} tallies the calls occurring 
+\textit{during} the execution of this routine, possibly in a subroutine. 
+As estimates given in Joules are hard to interpret, these results will 
+be given as the percentage of the total routine cost. Taking 
+control-flow into account, the cost of a line of code was defined as the 
+cost of a single execution of this line multiplied by the average number 
+of times it was executed per call. \Orka{} approximates the energy usage 
+of a routine with the cost of its calls to the Android API and assumes 
+that the remaining parts of the code have a marginal energy footprint. 
+On top of tallying the number of API calls during a routine execution, 
+\Orka{} needs to know where in the source code each of these calls 
+occurred. This information is provided by the \smali{} \texttt{.line} 
+instruction, which indicates what exact line in the source code 
+corresponds to the bytecode instructions that follow. Since all the API 
+calls happening during the execution of a subroutine are now attributed 
+to the parent routine as well, for a given routine, all API calls 
+happening during the execution of a subroutine will be attributed to the 
+line from which the subroutine is invoked.
+
+%Ultimately, \Orka{} is able to reconstruct the source-code of each 
+%routine and to include the source-line estimates. As developers provide 
+%only the \apk{} archive of their application, \Orka{} doesn't have 
+%access to the original source code but only to its \smali{} equivalent. 
+%Reverse engineering bytecode is a difficult problem and is outside the 
+%scope of this work. However, the \smali{} bytecode contains enough 
+%information to partially reconstruct the source-code of a routine by 
+%including only the line for which \Orka{} computes energy-estimates, 
+%i.e.\ the lines containing API and subroutines invocations. For each of 
+%these source-lines, \Orka{} will be able to display the line number 
+%alongside the energy-significant calls contained in that line and the 
+%corresponding energy estimates.
+
+\subsection{Implementation}
+
+\subsubsection{Injector}
+
+The first step was to allow the instrumented application to log 
+\texttt{(apiName, lineNumber)} pairs. On finding the \smali{} 
+\texttt{.line} statement, the injector now updates a variable containing 
+the source line-number corresponding to the current instructions. On 
+finding an API invocation, this information is then appended to the 
+API's name and passed to the \texttt{APILog} function. At this point, 
+\Orka{} is able to know where the API was called in a method's body and 
+to detect when the API was called from a subroutine, but not to map this 
+cost to a specific line in the code of the parent routine. In order to 
+access that information, the next step was to allow the instrumented 
+application to log messages indicating subroutine invocations alongside 
+the line from which the subroutine was called. On finding an 
+\texttt{invoke} statement, the injector now checks whether the called 
+routine is user-defined and injects a call to a logging function if so. 
+To answer the need for more various log messages, the \texttt{APILog} 
+function was extended into the \texttt{customLog} function able to log 
+custom messages.
+
+This design led log messages to be inserted before the invocation of any 
+subroutine, even the non-injected ones. This issue was noticed as the 
+\logcat{} results were containing many subroutine invocation messages 
+not followed by an entering statement. Therefore, this implementation 
+was breaking one main requirement of the injector, namely to enforce 
+that the minimum amount of code is injected. To mitigate this issue, the 
+injector needs to know which routines are injected prior to the 
+injection and add log messages only before calls to injected 
+subroutines. To this end, a preparatory phase was added to the injector 
+workflow: injected files are now scanned prior to the injection in order 
+to build the set of injected methods.
+
+\subsubsection{Analyser and \texttt{routine} class}
+
+The \texttt{routine} class used to view the cost of a routine as the sum 
+of the cost of all its API calls. In order to implement fine-grained 
+energy feedback, it now more convenient to see the cost of a routine as 
+the sum of the cost of all its lines. The cost of a line is defined as 
+the cost of the API calls occurring at this line. Finally, the 
+\texttt{routine} class was extended in order to generate a reconstructed 
+source code including energy estimates from the API data. A typical 
+output is presented in Figure \ref{fig:sourcelinefeedback}.
+
+\begin{figure}
+\centering
+\begin{lstlisting}
+method RecList.onCreate, Average cost: 0.0197754308, Calls: 1.0
+      2.64% l-1
+      1.45% l192    calling RecList.InitializeRepeatButton
+      0.88% l227    calling RecList.InitializeThemedButtonsBackgrounds
+      0.57% l229    calling Preferences.getCurrentlyPlayingFilePath
+     29.04% l247    calling RecList.updateSongList_extended
+     21.80% l257    calling android.os.Bundle.getString
+     21.80% l258    calling android.os.Bundle.getString
+     21.80% l260    calling android.os.Bundle.getString
+\end{lstlisting}
+\caption{Example of reconstructed source code with fine-grained guidance}
+\label{fig:sourcelinefeedback}
+\vspace{-0.32in}
+\end{figure}
+
+To store from which line a subroutine is called, a second stack was 
+added alongside the call stack. On finding a subroutine invocation log, 
+the line number from which the subroutine is called is added to the 
+stack. On finding an exiting statement, the last line number is popped 
+from the stack. By merging these two stacks, we obtain a stack of pairs 
+\texttt{(routineName, lineNumber)} indicating to which line the API 
+calls should be attributed to in a given routine. Finally, the names of 
+subroutines are stored in a separate dictionary, the keys of which are 
+line numbers.
+
+In some specific cases, e.g. a class accessing a static variable of 
+another class, injected constructors are called implicitly. As \Orka{} 
+is not yet able to detect such cases, subroutine invocation statements 
+are sometimes missing and there is no information regarding the line 
+number corresponding to the call. However, by comparing the two stack 
+sizes we are able to detect this and a default value, as necessary is 
+added to the stack to indicate the absence of any information.

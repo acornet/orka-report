@@ -1,0 +1,47 @@
+\section{Discussion}
+\subsection{Fine-grained energy feedback accessible to all developers}
+The first aim of this work was to address the lack of tools accessible to all developers and able to provide fine-grained energy feedback interpretable at a glance.
+In order to be accessible to all developers, this work had to rely on software-based approaches and place no hardware requirement on the user.
+To this end, the decision was made to extend \orka{}, an energy-profiler developed by two students at Imperial College London.
+By choosing to extend \orka{}, this work inherited its software-based nature and was on the right track to propose a solution accessible to all developers.
+This work even broadened the reach of \orka{}, as this tool can now be used both on Android Virtual Devices and on actual devices.
+While \orka{} is able to run on any development machine, it is practically unusable on machine unable to run Kernel Virtual Machines (KVMs) due to the slowness of the emulation.
+Therefore, \orka{} actually requires the user to own a machine able to run KVMs.
+By allowing developers to use an actual phone, this new version offers an alternative to the latter requirement.
+
+\orka{} was then successfully extended and is now able to provide developers with source-line level estimates, allowing them to locate and investigate energy bugs effortlessly.
+To this end, the source-line energy estimates were included in a reconstructed version of the original source code.
+
+However, by choosing to extend \orka{}, this work logically inherited its flaws and limitations.
+\orka{}'s main assumption is to approximate the cost of a routine with the cost the API calls in this routine.
+However, \orka{} doesn't actually compute the cost of these APIs, but instead leverages the work of \lv{}\ , who mined the cost of 800 API calls.
+Therefore, \orka{} heavily relies on the availability of these costs.
+With the release of new versions of the Android API, new APIs, for which \orka{} is not able to provide an energy-cost,  were introduced.
+The implementation of many existing APIs was also updated, leading \orka{} to use inaccurate energy estimates for these APIs.
+
+Moreover, \orka{} relies on instrumentation in order to produce the execution traces needed to compute the energy estimates.
+However, \orka{}'s injector is a critical and complex component, which limits the reach of \orka{}.
+Indeed, the current version of the injector remains unable to correctly process a significant fraction of Android applications, as shown in Section \ref{sec:eval:study:anal}.
+These bugs can at worse prevent the test application from being recompiled or launched by the Android OS.
+In other cases, they may lead to inaccurate execution traces and therefore skew the results.
+In order to broaden the reach of \orka{}, the injector should be improved by fixing the bugs discovered during \orka{}'s development and by addressing the issue affecting conditional statements inside loops.
+Finally, the set of applications included in \orka{}'s test environment should be extended in order to further test the correctness of this critical component.
+Finally, the injected instructions logging the various events processed by the analyser have themselves a cost, which is included in the drain caused by the CPU in the breakdown by component.
+Therefore, this process exhibit the \textit{Hawthorne Effect}, in which the measurement process affects by the measurements.
+
+Currently, \orka{} only provides results for a limited set of routines and should be extended to profile other significant ones.
+Based on its main assumption, \orka{} assumes that the cost of the routines making no calls to the Android API is marginal, and it consequently provides energy estimates exclusively for routines including API invocations.
+However, a routine could not make any calls to the Android API, but instead invokes a subroutine including API calls.
+This routine would have a non marginal cost and \orka{} should therefore provide an energy estimate for it.
+To this end, the injector should be extended in order to build a call graph of the user-defined routines, the leaves and nodes of which would be respectively the API calls and the routines.
+Any routine reachable from a leaf would make indirect calls to the Android API and should therefore be injected.
+In this way, \orka{} would only ignore the methods which actually have a marginal cost based on \orka{}'s main assumption.
+
+\subsection{Hardware energy accounting}
+The second aim of this work was to propose a tool able provide hardware usage accounting and to account for tail-energy.
+This work successfully implemented a solution able to map the energy drain caused by the Wi-Fi antenna back to the code and to partially account for tail-energy.
+The main limitation of the current implementation is the simplistic accounting policy used to map the energy activity with routines, as this policy is unable to account for the energy activity occurring outside of a routine.
+Moreover, this approach is only available when using \orka{} on an actual device, which places a hardware requirement on the user.
+To generate more meaningful and accurate results, this policy could be replaced by the last-trigger policy, which attributes the energy drain caused by a component to the last routine which triggered this component.
+Moreover, the energy estimates generated by monitoring the energy-activity of the hardware should be included in the energy estimates provided by \orka{} at the method-level.
+Finally, this research exclusively focussed on Wi-Fi due to the time constraints of this project and this work should ultimately be extended to all other hardware components.
