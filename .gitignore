@@ -1,0 +1,17 @@
+.DS_Store
+*.swp
+*~
+
+*.idx
+*.lot
+*.lof
+*.log
+*.out
+*.toc
+*.aux
+paper.pdf
+figures/google*.pdf
+*.gz
+*.bbl
+*.blg
+
