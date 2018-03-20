@@ -106,7 +106,7 @@ added alongside the call stack. On finding a subroutine invocation log,
 the line number from which the subroutine is called is added to the 
 stack. On finding an exiting statement, the last line number is popped 
 from the stack. By merging these two stacks, we obtain a stack of pairs 
-\texttt{(routineName, lineNumber)} indicating to which line the API 
+\texttt{(routineName, lineNumber)} indicating which line the API
 calls should be attributed to in a given routine. Finally, the names of 
 subroutines are stored in a separate dictionary, the keys of which are 
 line numbers.
